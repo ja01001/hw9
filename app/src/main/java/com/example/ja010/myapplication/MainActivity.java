@@ -20,7 +20,13 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -61,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                         memos.remove(i);
 
                     }
-                }).show();
+                }).setPositiveButton("아니요",null).show();
 
                 return true;
             }
@@ -72,8 +78,8 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 l1.setVisibility(View.GONE);
                 l2.setVisibility(View.VISIBLE); // data set;
-                e1.setText("change");
                 save.setText("수정");
+                read(getExternalPath()+"diary/"+memos.get(i));
             }
         });
 
@@ -115,18 +121,6 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(getApplicationContext(),msg,Toast.LENGTH_SHORT).show();
         Toast.makeText(this,""+path,Toast.LENGTH_SHORT).show();
     }
-  /*  public ArrayList<String> listf(){
-        ArrayList<String> c = new ArrayList<String>();
-
-        String path = getExternalPath();
-        File[] file = new File(path+"diary").listFiles();
-        for (int b=1; b<file.length;b++){
-            c.add(file[b].toString());
-        Toast.makeText(getApplicationContext(),""+c,Toast.LENGTH_SHORT).show();
-        }
-
-        return c;
-    }*/
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn1:
@@ -136,13 +130,15 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.btnsave:
                 if(save.getText()=="수정"){
-
-                    // 수정시 넣을 내용
+                    // 수정시 넣을 내용s
                 }
                 else{
-                    Toast.makeText(this,data,Toast.LENGTH_SHORT).show();
                     datepick();
-                    e1.setText(data);
+                    title tt = new title(data,e1.getText().toString());
+                    memos.add(tt.getTt());
+                    adapter.notifyDataSetChanged();
+                    write(getExternalPath()+"diary/"+tt.getTt(),tt.getContext());
+                    Toast.makeText(this,data,Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.btncancel:
@@ -150,6 +146,32 @@ public class MainActivity extends AppCompatActivity {
                 l1.setVisibility(View.VISIBLE);
                 l2.setVisibility(View.GONE);
 
+        }
+    }
+    public void write(String path,String title){// file 쓰기
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(path,true));
+            bw.write(title);
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this,"error",Toast.LENGTH_SHORT).show();
+        }
+    }
+    public void read(String path){ // file 읽기
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(path));
+            String readstr = "";
+            String str;
+            while ((str = br.readLine())!=null){
+                readstr += str+"";
+            }
+            br.close();
+            e1.setText(readstr);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     public void datepick(){

@@ -8,8 +8,8 @@ import android.content.Context;
 
 public class title {
     String tt;
-    Context c;
-    public title(String tt,Context c){
+    String c;
+    public title(String tt,String c){
         this.tt = tt;
         this.c = c;
     }
@@ -17,14 +17,14 @@ public class title {
     public String getTt() {
         return tt;
     }
-    public Context getContext(){
+    public String getContext(){
         return c;
     }
 
     public void setTt(String tt) {
         this.tt = tt;
     }
-    public void setC(Context c) {
+    public void setC(String c) {
         this.c = c;
     }
 }

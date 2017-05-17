@@ -41,7 +41,8 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout l1,l2; // l1 = list , l2 = datepicker
     Button save,cancel;
     EditText e1;
-    String data;
+    String data, aa ;
+    int a;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,6 +85,14 @@ public class MainActivity extends AppCompatActivity {
                 l2.setVisibility(View.VISIBLE); // data set;
                 save.setText("수정");
                 read(getExternalPath()+"diary/"+memos.get(i));
+                datepick();
+                memos.remove(a);
+                memos.add(data);
+                aa = memos.get(i);
+                a = i;
+                removes(getExternalPath()+"diary"+aa);
+                write(getExternalPath()+"diary"+data,e1.getText().toString());
+                adapter.notifyDataSetChanged();
             }
         });
 
@@ -133,8 +142,13 @@ public class MainActivity extends AppCompatActivity {
                 save.setText("저장");
                 break;
             case R.id.btnsave:
-                if(save.getText()=="수정"){
-                    Toast.makeText(this,"asdasd",Toast.LENGTH_SHORT).show();
+                if(save.getText().toString()=="수정"){
+                    datepick();
+                    memos.remove(a);
+                    memos.add(data);
+                    removes(getExternalPath()+"diary"+aa);
+                    write(getExternalPath()+"diary"+data,e1.getText().toString());
+                    save.setText("저장");
                     l1.setVisibility(View.VISIBLE);
                     l2.setVisibility(View.GONE);
                     adapter.notifyDataSetChanged();
@@ -142,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
                 else{
                     datepick();
                     final title tt = new title(data,e1.getText().toString());
-                    if(check(memos,tt.getTt())){
+                    if(memos.contains(tt.getTt())){
                         Toast.makeText(this,"이미 파일이 존재합니다.",Toast.LENGTH_SHORT).show();
                         AlertDialog.Builder bb = new AlertDialog.Builder(MainActivity.this);
                         bb.setTitle("중복")
@@ -152,7 +166,21 @@ public class MainActivity extends AppCompatActivity {
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         save.setText("수정");
                                         read(getExternalPath()+"diary/"+data);
-                                    }
+                                        datepick();
+                                        memos.remove(a);
+                                        memos.add(data);
+                                        if(memos.contains(tt.getTt())){
+                                            Toast.makeText(getApplication(),"역시 중복입니다.",Toast.LENGTH_SHORT).show();
+                                        }
+                                        else{
+                                            removes(getExternalPath()+"diary"+aa);
+                                            write(getExternalPath()+"diary"+data,e1.getText().toString());
+                                            save.setText("저장");
+                                            l1.setVisibility(View.VISIBLE);
+                                            l2.setVisibility(View.GONE);
+                                            adapter.notifyDataSetChanged();
+
+                                        }                                    }
                                 })
                                 .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
                                     @Override
@@ -160,14 +188,13 @@ public class MainActivity extends AppCompatActivity {
                                         l2.setVisibility(View.GONE);
                                         l1.setVisibility(View.VISIBLE);
                                     }
-                                })
-                                .show();
+                                }).show();
                     }
                     else {
                         memos.add(tt.getTt());
                         sort();
-                        adapter.notifyDataSetChanged();
                         write(getExternalPath() + "diary/" + tt.getTt(), tt.getContext());
+                        adapter.notifyDataSetChanged();
                         l1.setVisibility(View.VISIBLE);
                         l2.setVisibility(View.GONE);
                     }
@@ -237,18 +264,6 @@ public class MainActivity extends AppCompatActivity {
         }
         String dd = String.format(a+"-"+b+"-"+c);
         return dd;
-    }
-    public boolean check(ArrayList<String> mm,String a){
-        boolean xxx = false;
-        for(int x = 0; x<mm.size(); x++) {
-            if (a == mm.get(x)) {
-                xxx = false;
-            }
-            else{
-                xxx = true;
-            }
-        }
-        return  xxx;
     }
     public void removes(String path){
         File f = new File(path);

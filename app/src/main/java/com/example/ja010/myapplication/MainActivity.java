@@ -19,7 +19,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -27,7 +26,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     ListView listv;
@@ -53,19 +57,19 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,memos);
         listv.setAdapter(adapter);
         mkdi();
-        memos.add("메모");
         adapter.notifyDataSetChanged();
-        Toast.makeText(this,memos.get(0),Toast.LENGTH_SHORT).show();
         // long item click event (not)
         listv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+            public boolean onItemLongClick(final AdapterView<?> adapterView, View view, final int position, long l) {
                 AlertDialog.Builder dig = new AlertDialog.Builder(MainActivity.this);
                 dig.setTitle("삭제?").setNegativeButton("예", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        memos.remove(i);
-
+                        String path = getExternalPath();
+                        removes(path+"diary/"+memos.get(position));
+                        memos.remove(position);
+                        adapter.notifyDataSetChanged();
                     }
                 }).setPositiveButton("아니요",null).show();
 
@@ -88,7 +92,8 @@ public class MainActivity extends AppCompatActivity {
     public String getExternalPath(){ // sd 카드 경로 설정
         String sdpath = "";
         String ext = Environment.getExternalStorageState();
-        if(ext.equals(Environment.MEDIA_MOUNTED)){
+        String a = Environment.MEDIA_MOUNTED;
+        if(ext.equals(a)){
             sdpath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/";
         }
         else
@@ -118,31 +123,57 @@ public class MainActivity extends AppCompatActivity {
         if(file.isDirectory() ==false){
             msg = "error";
         }
-        Toast.makeText(getApplicationContext(),msg,Toast.LENGTH_SHORT).show();
-        Toast.makeText(this,""+path,Toast.LENGTH_SHORT).show();
     }
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn1:
-                Toast.makeText(this, "click", Toast.LENGTH_SHORT).show();
                 l1.setVisibility(View.GONE);
                 l2.setVisibility(View.VISIBLE);
+                e1.setText("");
+                save.setText("저장");
                 break;
             case R.id.btnsave:
                 if(save.getText()=="수정"){
-                    // 수정시 넣을 내용s
+                    Toast.makeText(this,"asdasd",Toast.LENGTH_SHORT).show();
+                    l1.setVisibility(View.VISIBLE);
+                    l2.setVisibility(View.GONE);
+                    adapter.notifyDataSetChanged();
                 }
                 else{
                     datepick();
-                    title tt = new title(data,e1.getText().toString());
-                    memos.add(tt.getTt());
-                    adapter.notifyDataSetChanged();
-                    write(getExternalPath()+"diary/"+tt.getTt(),tt.getContext());
-                    Toast.makeText(this,data,Toast.LENGTH_SHORT).show();
+                    final title tt = new title(data,e1.getText().toString());
+                    if(check(memos,tt.getTt())){
+                        Toast.makeText(this,"이미 파일이 존재합니다.",Toast.LENGTH_SHORT).show();
+                        AlertDialog.Builder bb = new AlertDialog.Builder(MainActivity.this);
+                        bb.setTitle("중복")
+                                .setMessage("이미 해당 날짜의 파일이 존재합니다. 아니오를 누르시면 초기화면으로 돌아갑니다.")
+                                .setPositiveButton("예", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        save.setText("수정");
+                                        read(getExternalPath()+"diary/"+data);
+                                    }
+                                })
+                                .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        l2.setVisibility(View.GONE);
+                                        l1.setVisibility(View.VISIBLE);
+                                    }
+                                })
+                                .show();
+                    }
+                    else {
+                        memos.add(tt.getTt());
+                        sort();
+                        adapter.notifyDataSetChanged();
+                        write(getExternalPath() + "diary/" + tt.getTt(), tt.getContext());
+                        l1.setVisibility(View.VISIBLE);
+                        l2.setVisibility(View.GONE);
+                    }
                 }
                 break;
             case R.id.btncancel:
-                Toast.makeText(this,"취소",Toast.LENGTH_SHORT).show();
                 l1.setVisibility(View.VISIBLE);
                 l2.setVisibility(View.GONE);
 
@@ -157,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             Toast.makeText(this,"error",Toast.LENGTH_SHORT).show();
         }
-    }
+    } //clear
     public void read(String path){ // file 읽기
         try {
             BufferedReader br = new BufferedReader(new FileReader(path));
@@ -173,36 +204,55 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    } //clear
     public void datepick(){
         // date picker
         // init
-        String a =String.valueOf(dp.getYear()).substring(2);
-        String b = String.valueOf(dp.getMonth()+1);
-        String c;
-        String e;String d = String.valueOf(dp.getDayOfMonth());
-        if(b.length()==1){
-            c = "0"+b;}
-        else{c = b;}
-        if(d.length()==1){e = "0"+d;}
-        else{e=d;}
-        data = a+"-"+c+"-"+e+".memo";
+        data = dateset(dp.getYear(),dp.getMonth(),dp.getDayOfMonth())+".memo";
         dp.init(dp.getYear(), dp.getMonth(), dp.getDayOfMonth(), new DatePicker.OnDateChangedListener() {
             @Override
             public void onDateChanged(DatePicker datePicker, int i, int i1, int i2) {
-                String a = String.valueOf(i).substring(2);
-                String b = String.valueOf(i1+1);
-                String c;
-                String e;String d = String.valueOf(i2);
-                if(b.length()==1){
-                    c = "0"+b;}
-                else{c = b;}
-                if(d.length()==1){e = "0"+d;}
-                else{e=d;}
-                data = a+"-"+(c)+"-"+e+".memo";
+                data = dateset(dp.getYear(),dp.getMonth(),dp.getDayOfMonth())+".memo";
             }
         });
+    } // clear
+    public void sort(){
+        Collections.sort(memos,comparator);
+    } // clear
+    Comparator<String> comparator = new Comparator<String>() {
+        @Override
+        public int compare(String o, String t1) {
+            return o.compareTo(t1);
+        }
+    };
+    public String dateset(int year,int month, int day){ // date format
+        String a = String.valueOf(year).substring(2);
+        String b = String.valueOf(month+1);
+        String c = String.valueOf(day);
+        if(b.length()==1){
+            b = "0"+b;
+        }
+        if(c.length()==1){
+            c = "0"+c;
+        }
+        String dd = String.format(a+"-"+b+"-"+c);
+        return dd;
     }
-
+    public boolean check(ArrayList<String> mm,String a){
+        boolean xxx = false;
+        for(int x = 0; x<mm.size(); x++) {
+            if (a == mm.get(x)) {
+                xxx = false;
+            }
+            else{
+                xxx = true;
+            }
+        }
+        return  xxx;
+    }
+    public void removes(String path){
+        File f = new File(path);
+        f.delete();
+    }
 
 }
